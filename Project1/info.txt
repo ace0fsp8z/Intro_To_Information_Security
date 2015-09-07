@@ -1,0 +1,23 @@
+Program received signal SIGSEGV, Segmentation fault.
+0xaaaaaaaa in ?? ()
+
+4*14 = 56 bytes to overwrite return
+8*14 = 112 input chars
+25 bytes shellcode
+
+print system
+info files
+.rodata
+find <hex>,<hex>,"sh"
+x/s <hex>
+
+0xb7e55190 -> system() address
+0xb7f730f5 -> 'sh' address
+b7e481e0
+
+(gdb) p exit
+$1 = {<text variable, no debug info>} 0xb7e481e0 <__GI_exit>
+
+
+0xb7ff7e5c
+0xb7e56190
