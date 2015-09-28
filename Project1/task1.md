@@ -70,7 +70,7 @@ Since we have a non-executable stack, we will still overwrite the return address
 | dummy return addr : HACK          |
 | eip: system() address |
 | ebp :AAAA (overwritten frame pointer)
-| buf[]: 264 'A's                |
+| buf[265]: 264 'A's                |
 
 Already know we need 272 bytes to overwrite the return address so lets fire up gdb to find out the address of the libc `system()` call and an address for string 'sh': `gdb vulnerable`
 
@@ -190,15 +190,16 @@ The addresses in bold are the ones we are interested in. Namely on this example 
 
 **0xb7f740f5** is the address of 'sh'
 
-##3b. Writing the exploit
+##3. Writing the exploit
 
 All we need to do now is append these 2 addresses to the end of our string of A's in order to essentially call `system('sh')` and spawn a shell
 
 Here's what little math we need:
 
 - Smashing EIP: 272 - 4 = 268 'A's needed
-- Append system() -> "\x90\x61\xe5\xb7" * 2 since we need to fill the return address as well
-- Append 'sh' -> "\xf5\x40\xf7\xb7"
+- Append system() (4 bytes) -> "\x90\x61\xe5\xb7"
+- Append dummy return address (4 bytes) -> "HACK" in this example
+- Append 'sh' (4 bytes) -> "\xf5\x40\xf7\xb7"
 
 On the command line:
 
