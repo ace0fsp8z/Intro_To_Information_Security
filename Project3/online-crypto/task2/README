@@ -1,0 +1,5 @@
+1. Use the provided block ciphers.
+If you want to use wrapper around the C++ implementation. Run make to generate
+library first and then load it with Python.
+2. Find your key range in keyrange.csv
+3. Find the key used to encrypt plaintext to ciphertext.
