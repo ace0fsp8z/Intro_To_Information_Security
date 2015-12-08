@@ -4,7 +4,7 @@
 <html>
 <script src="/assets/jquery/js/jquery-1.7.2.min.js"></script>
 <body>
-<form action='http://payroll.gatech.edu/index.php' onsubmit='' method='POST'>
+<form action='index.php' onsubmit='' method='POST'>
 	<input type='hidden' name='action' value='login'/>
 	<input type='hidden' name='login' value=''/>
 	<input type='hidden' name='pw' value='save'/>
