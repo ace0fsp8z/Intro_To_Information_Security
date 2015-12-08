@@ -1,4 +1,6 @@
 <!DOCTYPE html>
+<!-- the vulnerable code is in index.html due to escapeString function which replaces single quotes with double quotes resulting in a second order sql injection whereby a user registered with the proper login string can actually use his login credential to login to the account of the victim 
+-->
 <html>
 <script src="/assets/jquery/js/jquery-1.7.2.min.js"></script>
 <body>

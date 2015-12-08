@@ -1,4 +1,6 @@
 <!DOCTYPE html>
+<!--the vulnerable code is in index.php, specifically in the value field of the login input element where the attacker than execute arbitrary javascript and steal login credentials
+-->
 <html>
 <body onload='document.forms[0].submit()'>
 <form action='index.php' onsubmit='' method='POST'>
